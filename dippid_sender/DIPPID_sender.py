@@ -19,8 +19,8 @@ def send_random_button1_press():
     message_release = '{"button_1": ' + str(0) + '}'
 
     while True:
-        # Computes a random holding time for the button press
-        hold_time = random.uniform(1, 3)
+        # computes a random holding time for the button press
+        hold_time = random.uniform(0, 3)
 
         # sends button press
         print(message_press)
@@ -30,38 +30,42 @@ def send_random_button1_press():
         print(f'hold for {hold_time} seconds')
         time.sleep(hold_time)
 
-        #releases button
+        # releases button
         print(message_release)
         sock.sendto(message_release.encode(),(IP, PORT))
 
-        # Computes a random pause of 1 to 5 seconds between presses
+        # computes a random pause of 1 to 5 seconds between presses
         waiting_time = random.uniform(1, 5)
         print(f'wait for {waiting_time} to press again')
         time.sleep(waiting_time)
 
-def accelerometer_sinus_sample(frequency):
-    # specify basic sinus parameters
+def accelerometer_sinus_sample(frequency, amplitude):
+
+    # set time based variable t
     t = time.time()
 
     # calculate sinus value at time t
-    value = math.sin(2*math.pi * frequency * t)
+    value = amplitude * math.sin(2*math.pi * frequency * t)
 
     return value
 
 def send_accelerometer_sample():
 
-    # Set different frequencies for each axis to receive different functions
+    # set different frequencies and amplitudes for each axis to receive different functions
     x_freq = 1
+    x_amplitude = 3
     y_freq = 1.5
+    y_amplitude = 5
     z_freq = 2
+    z_amplitude = 7
 
     while True:
         # send accelerometer value in json format as encode()-function requires string format
         message_accelerometer = json.dumps ({
                             "accelerometer": {
-                                "x": accelerometer_sinus_sample(x_freq),
-                                "y": accelerometer_sinus_sample(y_freq),
-                                "z": accelerometer_sinus_sample(z_freq)
+                                "x": accelerometer_sinus_sample(x_freq, x_amplitude),
+                                "y": accelerometer_sinus_sample(y_freq, y_amplitude),
+                                "z": accelerometer_sinus_sample(z_freq, z_amplitude)
                             } 
         })
         sock.sendto(message_accelerometer.encode(),(IP, PORT))
@@ -69,8 +73,8 @@ def send_accelerometer_sample():
         # Print accelerometer content
         print(message_accelerometer)
 
-        # set smaller sleep value to ensure smoother function curve
-        time.sleep(0.5)
+        # Set smaller sleep value to ensure smoother function curve
+        time.sleep(0.4)
 
 # Start threads to allow simultaneous sending of both values
 threading.Thread(target = send_random_button1_press, daemon=True).start()
