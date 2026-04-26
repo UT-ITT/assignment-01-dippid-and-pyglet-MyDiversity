@@ -35,6 +35,10 @@ ball_dy = BALL_SPEED
 # variable for gravity sensor value
 gravity_y = 0
 
+# Variable for game state
+game_won = False
+game_lost = False
+
 # variable and label for score counter
 score = 0
 score_label = pyglet.text.Label(
@@ -43,10 +47,6 @@ score_label = pyglet.text.Label(
     y = 50,
     font_size = 24
 )
-
-# check if game is won
-game_won = False
-game_lost = False
 
 # win screen
 win_screen_label = pyglet.text.Label(
@@ -89,11 +89,12 @@ close_label = pyglet.text.Label(
 # create block data consisting of position and color of each block
 def get_block_data(block_count):
     i = 0
-    current_fade = 0
+    current_fade = 0 # fade value to change the block color
     block_list = [] # empty list to store future block positions
     next_x_pos = 5  # starting positions for block coordinates 
     next_y_pos = 550
 
+    # dont allow too many blocks to keep the game playable
     if block_count > 100:
         raise ValueError(f"Block count of {block_count} is too large, stay below 100")
 
@@ -110,7 +111,7 @@ def get_block_data(block_count):
 
 block_data = get_block_data(NUMBER_OF_BLOCKS)
 
-# define how gravity data is handled
+# define how sensor gravity data is handled
 def handle_gravity(data):
     global gravity_y
 
@@ -160,7 +161,7 @@ def update(dt):
     if paddle.x + paddle.width > WINDOW_WIDTH:
         paddle.x = WINDOW_WIDTH - paddle.width
 
-    # check for collision with game window
+    # check for ball collision with game window
     if ball.x - ball.radius < 0 or ball.x + ball.radius > WINDOW_WIDTH:
         ball_dx *= -1
 
@@ -172,7 +173,7 @@ def update(dt):
         game_lost = True
         return
 
-    # check for collision with paddle
+    # check for ball collision with paddle
     if (
         ball.x + ball.radius >= paddle.x and
         ball.x - ball.radius <= paddle.x + paddle.width and
@@ -182,8 +183,8 @@ def update(dt):
         if ball_dy < 0 and ball.y > paddle.y:
             ball_dy *= -1
 
-    # check for collision with blocks
-    for item in block_data: # copy of the coordinates in case we delete blocks
+    # check for ball collision with blocks
+    for item in block_data: 
         (block_x, block_y), color = item
         if ((ball.x + ball.radius >= block_x) and 
             (ball.x - ball.radius <= block_x + BLOCK_WIDTH) and
@@ -196,7 +197,7 @@ def update(dt):
             score_label.text = str(score)
             break
 
-    # check if any blocks are left
+    # check if any blocks are left, if not the game is won
     if len(block_data) == 0:
         game_won = True
         return
@@ -207,18 +208,26 @@ pyglet.clock.schedule_interval(update, 1/60)
 @win.event
 def on_draw():
     win.clear()
+
+    # draw win screen
     if game_won:
         win_screen_label.draw()
         restart_label.draw()
         close_label.draw()
         return
+    
+    # draw lose screen
     if game_lost:
         lose_screen_label.draw()
         restart_label.draw()
         close_label.draw()
         return
+    
+    # draw paddle and ball
     paddle.draw()
     ball.draw()
+
+    # draw blocks
     for (posX, posY), color in block_data:
         block.x, block.y = posX, posY
         block.color = color
@@ -228,8 +237,12 @@ def on_draw():
 @win.event
 def on_key_press(symbol, modifiers):
     global block_data, NUMBER_OF_BLOCKS, game_lost, game_won
+
+    # set exit key
     if symbol == pyglet.window.key.Q:
         os._exit(0)
+        
+    # set restart key
     if (game_lost and symbol == pyglet.window.key.ENTER) or (game_won and symbol == pyglet.window.key.ENTER):
         reset_game()
 
